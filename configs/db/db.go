@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/alonecandies/mysql-gin-gorm-auth/api/entities"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -26,9 +27,8 @@ func DBConnection() *gorm.DB {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
-	} else {
-		db.AutoMigrate()
 	}
+	db.AutoMigrate(&entities.User{}, &entities.Book{})
 	return db
 }
 
