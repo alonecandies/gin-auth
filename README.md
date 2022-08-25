@@ -1,0 +1,1 @@
+# mysql-gin-gorm-auth
