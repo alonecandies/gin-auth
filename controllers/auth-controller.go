@@ -11,21 +11,21 @@ type AuthController interface {
 }
 
 type authController struct {
-	
+
 }
 
 func NewAuthController() AuthController {
 	return &authController{}
 }
 
-func (c *authController) Login(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+func (c *authController) Login(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Helllo login",
 	})
 }
 
-func (c *authController) Register(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+func (c *authController) Register(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Helllo register",
 	})
 }

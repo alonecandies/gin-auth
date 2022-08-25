@@ -1,0 +1,77 @@
+package repositories
+
+import (
+	"net/http"
+
+	"github.com/alonecandies/mysql-gin-gorm-auth/api/entities"
+	"github.com/alonecandies/mysql-gin-gorm-auth/api/helpers"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+type UserRepository interface {
+	InsertUser(user entities.User) entities.User
+	UpdateUser(user entities.User) entities.User
+	VerifyCredentials(email string, password string) interface{}
+	IsDuplicateEmail(email string) (tx *gorm.DB)
+	FindByEmail(email string) entities.User
+	ProfileUser(userId uint64) entities.User
+}
+
+type userConnection struct {
+	connection *gorm.DB
+}
+
+func NewUserRepository(connection *gorm.DB) UserRepository {
+	return &userConnection{
+		connection: connection,
+	}
+}
+
+func hashPassword(password []byte) string {
+	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return string(hash)
+}
+
+func (u *userConnection) InsertUser(user entities.User) entities.User {
+	user.Password = hashPassword([]byte(user.Password))
+	u.connection.Create(&user)
+	return user
+}
+
+func (u *userConnection) UpdateUser(user entities.User) entities.User {
+	u.connection.Save(&user)
+	return user
+}
+
+func (u *userConnection) VerifyCredentials(email string, password string) interface{} {
+	var user entities.User
+	u.connection.Where("email = ?", email).First(&user)
+	if user.ID == 0 {
+		return helpers.BuildErrorResponse(http.StatusUnauthorized, "Unauthorized", nil)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return helpers.BuildErrorResponse(http.StatusUnauthorized, "Unauthorized", nil)
+	}
+	return helpers.BuildResponse(http.StatusOK, "Success", user)
+}
+
+func (u *userConnection) IsDuplicateEmail(email string) (tx *gorm.DB) {
+	tx = u.connection.Where("email = ?", email).First(&entities.User{})
+	return tx
+}
+
+func (u *userConnection) FindByEmail(email string) entities.User {
+	var user entities.User
+	u.connection.Where("email = ?", email).First(&user)
+	return user
+}
+
+func (u *userConnection) ProfileUser(userId uint64) entities.User {
+	var user entities.User
+	u.connection.Where("id = ?", userId).First(&user)
+	return user
+}
