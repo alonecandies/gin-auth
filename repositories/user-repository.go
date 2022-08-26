@@ -1,10 +1,7 @@
 package repositories
 
 import (
-	"net/http"
-
 	"github.com/alonecandies/mysql-gin-gorm-auth/api/entities"
-	"github.com/alonecandies/mysql-gin-gorm-auth/api/helpers"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -29,7 +26,7 @@ func NewUserRepository(connection *gorm.DB) UserRepository {
 }
 
 func hashPassword(password []byte) string {
-	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.MinCost)
 	if err != nil {
 		panic(err)
 	}
@@ -56,14 +53,12 @@ func (u *userConnection) UpdateUser(user entities.User) entities.User {
 
 func (u *userConnection) VerifyCredentials(email string, password string) interface{} {
 	var user entities.User
-	u.connection.Where("email = ?", email).First(&user)
-	if user.ID == 0 {
-		return helpers.BuildErrorResponse(http.StatusUnauthorized, "Unauthorized", nil)
+	res := u.connection.Where("email = ?", email).First(&user)
+	if res.Error != nil {
+		return nil
+	} else {
+		return user
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return helpers.BuildErrorResponse(http.StatusUnauthorized, "Unauthorized", nil)
-	}
-	return helpers.BuildResponse(http.StatusOK, "Success", user)
 }
 
 func (u *userConnection) IsDuplicateEmail(email string) (tx *gorm.DB) {

@@ -2,11 +2,9 @@ package services
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/alonecandies/mysql-gin-gorm-auth/api/dtos"
 	"github.com/alonecandies/mysql-gin-gorm-auth/api/entities"
-	"github.com/alonecandies/mysql-gin-gorm-auth/api/helpers"
 	"github.com/alonecandies/mysql-gin-gorm-auth/api/repositories"
 	"github.com/mashingan/smapping"
 	"golang.org/x/crypto/bcrypt"
@@ -35,26 +33,28 @@ func comparePassword(password []byte, hash []byte) bool {
 
 func (service *authService) VerifyCredentials(email string, password string) interface{} {
 	res := service.userRepository.VerifyCredentials(email, password)
-	if v, ok := res.(entities.User); ok {
+	v := res.(entities.User)
+	if res != nil {
 		comparePassword := comparePassword([]byte(password), []byte(v.Password))
 		if v.Email == email && comparePassword {
-			return helpers.BuildResponse(http.StatusOK, "Success", v)
+			return res
 		} else {
-			return helpers.BuildErrorResponse(http.StatusUnauthorized, "Unauthorized", nil)
+			return nil
 		}
 	} else {
-		return res
+		return nil
 	}
 }
 
 func (service *authService) CreateUser(userCreateDTO *dtos.RegisterDTO) entities.User {
 	user := entities.User{
-		Email: userCreateDTO.Email,
-		Name:  userCreateDTO.Name,
+		Email:    userCreateDTO.Email,
+		Password: userCreateDTO.Password,
+		Name:     userCreateDTO.Name,
 	}
 	err := smapping.FillStruct(&user, smapping.MapFields(&user))
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalf("Failed to map: %v", err)
 	}
 	res := service.userRepository.InsertUser(user)
 	return res
