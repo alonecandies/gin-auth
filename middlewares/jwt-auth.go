@@ -1,12 +1,12 @@
 package middlewares
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/alonecandies/mysql-gin-gorm-auth/api/helpers"
 	"github.com/alonecandies/mysql-gin-gorm-auth/api/services"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 func AuthorizeJWT(jwtService services.JWTService) gin.HandlerFunc {
@@ -18,14 +18,14 @@ func AuthorizeJWT(jwtService services.JWTService) gin.HandlerFunc {
 			return
 		}
 		token, err := jwtService.ValidateToken(tokenString)
-		if err != nil {
-			response := helpers.BuildErrorResponse(http.StatusUnauthorized, err.Error(), nil)
-			c.AbortWithStatusJSON(response.Status, response)
-			return
+		if token.Valid {
+			claims := token.Claims.(*services.JwtCustomClaims)
+			log.Println("Claim[user_id]: ", claims.UserId)
+			log.Println("Claim[issuer] :", claims.Issuer)
+		} else {
+			log.Println(err)
+			response := helpers.BuildErrorResponse(http.StatusBadRequest, err.Error(), nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
 		}
-		claims := token.Claims.(jwt.MapClaims)
-		response := helpers.BuildResponse(http.StatusOK, "Success", claims)
-		c.JSON(response.Status, response)
-		c.Next()
 	}
 }
