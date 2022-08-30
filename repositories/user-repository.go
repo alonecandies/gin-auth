@@ -13,6 +13,7 @@ type UserRepository interface {
 	IsDuplicateEmail(email string) (tx *gorm.DB)
 	FindByEmail(email string) entities.User
 	ProfileUser(userId uint64) entities.User
+	MyBooks(userId uint64) []entities.Book
 }
 
 type userConnection struct {
@@ -76,4 +77,10 @@ func (u *userConnection) ProfileUser(userId uint64) entities.User {
 	var user entities.User
 	u.connection.Where("id = ?", userId).First(&user)
 	return user
+}
+
+func (u *userConnection) MyBooks(userId uint64) []entities.Book {
+	var books []entities.Book
+	u.connection.Where("user_id = ?", userId).Find(&books)
+	return books
 }

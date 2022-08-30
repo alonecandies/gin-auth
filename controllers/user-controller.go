@@ -14,6 +14,7 @@ import (
 type UserController interface {
 	Update(c *gin.Context)
 	Profile(c *gin.Context)
+	MyBooks(c *gin.Context)
 }
 
 type userController struct {
@@ -73,5 +74,25 @@ func (c *userController) Profile(ctx *gin.Context) {
 	}
 	u := c.userService.Profile(id)
 	res := helpers.BuildResponse(http.StatusOK, "User profile", u)
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (c *userController) MyBooks(ctx *gin.Context) {
+	authHeader := ctx.GetHeader("Authorization")
+	token, errToken := c.jwtService.ValidateToken(authHeader)
+	if errToken != nil {
+		response := helpers.BuildErrorResponse(http.StatusUnauthorized, errToken.Error(), helpers.EmptyResponse{})
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+	claims := token.Claims.(*services.JwtCustomClaims)
+	id, err := strconv.ParseUint(fmt.Sprintf("%v", claims.UserId), 10, 64)
+	if err != nil {
+		response := helpers.BuildErrorResponse(http.StatusUnauthorized, err.Error(), helpers.EmptyResponse{})
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, response)
+		return
+	}
+	books := c.userService.MyBooks(id)
+	res := helpers.BuildResponse(http.StatusOK, "User books", books)
 	ctx.JSON(http.StatusOK, res)
 }
